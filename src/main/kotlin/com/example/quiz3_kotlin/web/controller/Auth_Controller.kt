@@ -1,19 +1,23 @@
 package com.example.quiz3_kotlin.web.controller
 
+import com.example.quiz3_kotlin.security.JwtToken
 import com.example.quiz3_kotlin.services.System_Auth_Services
 import com.example.quiz3_kotlin.web.model.Roles
 import com.example.quiz3_kotlin.web.model.UserDTO
 import com.example.quiz3_kotlin.web.model.Users
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.ResponseEntity
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
+import org.springframework.http.ResponseEntity as ResponseEntity
 
 @RestController
 @RequestMapping("/api/auth")
-class Auth_Controller {
+class Auth_Controller(
     @Autowired
-    var system_auth_services: System_Auth_Services? = null
+    var system_auth_services: System_Auth_Services,
+) {
+
 
 
     fun stringHeader( tf : Boolean?) : String {
@@ -32,10 +36,10 @@ class Auth_Controller {
     }
 
     @PostMapping("/signin")
-    fun userSignIn(@RequestBody userDTO: UserDTO): ResponseEntity<String>{
-        var header:String = stringHeader(system_auth_services?.userSignIn(userDTO))
+    fun userSignIn(@RequestBody userDTO: UserDTO): ResponseEntity<String> {
+        var token:String = system_auth_services?.userSignIn(userDTO).toString()
 
-        return ResponseEntity.ok(header)
+        return ResponseEntity.status(HttpStatus.OK).body(token)
     }
     @PostMapping("/signout")
     fun userSignOut(){
