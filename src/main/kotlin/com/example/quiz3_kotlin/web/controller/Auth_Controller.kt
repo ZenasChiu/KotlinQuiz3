@@ -1,15 +1,16 @@
 package com.example.quiz3_kotlin.web.controller
 
-import com.example.quiz3_kotlin.security.JwtToken
 import com.example.quiz3_kotlin.services.System_Auth_Services
-import com.example.quiz3_kotlin.web.model.Roles
 import com.example.quiz3_kotlin.web.model.UserDTO
-import com.example.quiz3_kotlin.web.model.Users
-
+import jakarta.security.auth.message.AuthException
+import jakarta.servlet.http.Cookie
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import org.springframework.http.ResponseEntity as ResponseEntity
+
 
 @RestController
 @RequestMapping("/api/auth")
@@ -34,17 +35,34 @@ class Auth_Controller(
         system_auth_services?.userSignUp(userDTO)
         return userDTO
     }
-
     @PostMapping("/signin")
-    fun userSignIn(@RequestBody userDTO: UserDTO): ResponseEntity<String> {
-        var token:String = system_auth_services?.userSignIn(userDTO).toString()
+    fun userSignIn(@RequestBody userDTO: UserDTO, response: HttpServletResponse, request: HttpServletRequest): ResponseEntity<Any>{
+        var token = system_auth_services?.userSignIn(userDTO)
 
-        return ResponseEntity.status(HttpStatus.OK).body(token)
+        val cookie = Cookie(userDTO.userName, token.toString())
+        cookie.path = "/api"
+        cookie.isHttpOnly = true
+        response.addCookie(cookie)
+        response.addHeader("Authorization", token);
+
+        return ResponseEntity.ok(token)
+
     }
     @PostMapping("/signout")
-    fun userSignOut(){
-        TODO("Token Get & Disable")
-        //Token disable
+    fun userSignOut(request: HttpServletRequest): ResponseEntity<Any> {
+        val cookies = request.cookies
+        for (c: Cookie in cookies) {
+            val token: String = c.value
+            try {
+                system_auth_services.userSignout(token)
+                return ResponseEntity.status(HttpStatus.OK).body("Sign out done")
+
+            } catch (e: AuthException) {
+                //jwtToken.checkToken(token)
+                return ResponseEntity.status(HttpStatus.OK).body(e.message)
+            }
+        }
+        return ResponseEntity.status(HttpStatus.OK).body("error")
     }
 
 

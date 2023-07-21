@@ -1,9 +1,9 @@
 package com.example.quiz3_kotlin.web.controller
 
 import com.example.quiz3_kotlin.security.JwtToken
-import com.example.quiz3_kotlin.services.System_Auth_Services
-import com.example.quiz3_kotlin.services.System_Test_Services
 import jakarta.security.auth.message.AuthException
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.Cookie
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -27,14 +27,20 @@ class Test_Controller(
 
     }
     @GetMapping("/user")
-    fun getUserContent(@RequestHeader("Authorization") au:String) : ResponseEntity<String>{
-        val token : String = au.substring(6);
-        try {
-            jwtToken.validateToken(token);
-        } catch (e : AuthException) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.toString())
+    fun getUserContent(request: HttpServletRequest): ResponseEntity<Any>{
+        val cookies = request.cookies
+        var message : String ="error"
+        for(c : Cookie in cookies){
+            val token : String = c.value
+            try {
+                jwtToken.validateToken(token);
+                return ResponseEntity.status(HttpStatus.OK).body("access OK");
+            } catch (e : AuthException) {
+                //jwtToken.checkToken(token)
+                message =e.message.toString()
+            }
         }
-        return ResponseEntity.status(HttpStatus.OK).body("access OK");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(message)
     }
 
 

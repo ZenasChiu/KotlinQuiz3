@@ -1,20 +1,18 @@
 package com.example.quiz3_kotlin.services
 
+import com.example.quiz3_kotlin.repository.TokenDAO
 import com.example.quiz3_kotlin.repository.UserRepository
-import com.example.quiz3_kotlin.security.EncryptionAES
 import com.example.quiz3_kotlin.security.EncryptionMD5
 import com.example.quiz3_kotlin.security.JwtToken
 import com.example.quiz3_kotlin.web.model.UserDTO
 import com.example.quiz3_kotlin.web.model.Users
+import jakarta.security.auth.message.AuthException
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.io.IOException
 import java.sql.SQLException
 
 @Service
 class System_Auth_ServicesImpl(
-    @Autowired
-    var aes : EncryptionAES,
     @Autowired
     var md5 : EncryptionMD5,
 
@@ -22,7 +20,10 @@ class System_Auth_ServicesImpl(
     var jwtToken: JwtToken,
 
     @Autowired
-    var userRepository: UserRepository
+    var userRepository: UserRepository,
+
+    @Autowired
+    var tokenDAO : TokenDAO
 
 ) : System_Auth_Services {
 
@@ -44,7 +45,11 @@ class System_Auth_ServicesImpl(
     override fun userSignIn(userDTO: UserDTO): String {
         val check_user : Users?= userRepository.getUserByName(userDTO.userName.toString())
         when(check_user?.password == md5.hash(userDTO.password.toString())){
-            true -> return jwtToken.generateToken(check_user).toString()
+            true -> {
+                val t: String = jwtToken.generateToken(check_user)
+
+                return t
+            }
             false -> return "Wrong User or password"
             else -> return "Enter format wrong"
         }
@@ -52,5 +57,14 @@ class System_Auth_ServicesImpl(
 
         TODO("encrypt the ender password MD5 one way encrypt & compare with data from database")
         //return false
+    }
+
+    override fun userSignout(token: String) {
+        try{
+        tokenDAO.removeToken(token)
+        }
+        catch (e : AuthException){
+            throw e
+        }
     }
 }
